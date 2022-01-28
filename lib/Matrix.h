@@ -10,10 +10,10 @@ void multiplyAccumulate(double *a, double *b, double *d, const int n, const int 
 void T(double *a, int n, int m, double *b);
 
 /* Multiply accumulate
- * a - matrix n*m
+ * a - matrix           n*m
  * b - vector with len = m
  * d - vector with len = n
- * c = a*b + d
+ * c = a*b + d   - len = n
  */
 void MAC_MV(double *a, double *b, double *d, const int n, const int m, double *c);
 

@@ -29,15 +29,10 @@ int main() {
     dE[1] = test_Y[i+1] - output[1];
     E += dE[0]*dE[0] + dE[1]*dE[1];
     net1->backward(dE, nullptr, j);
+    net1->applyGradients();
     if(j % 100000 == 0 and j != 0) {
       printf("%d: %.10lf\n", j, E / 100000.);
       E = 0;
-      // net1->save("tmp.model");
-      // printf("saved!\n");
-      // delete net1;
-      // net1 = FFNet::load("tmp.model");
-      // net1->setLearningParams(1., .001, 1000000);
-      // printf("LOADED!!\n");
     }
   }
 
