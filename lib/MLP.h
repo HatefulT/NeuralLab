@@ -45,6 +45,9 @@ class FFNet {
      * lRate - double > 0
      */
     FFNet(int L, int *lSizes);
+    FFNet(char *filename);
+    ~FFNet();
+
     void setLearningParams(double lRate0, double lRateTau, int Tau);
 
     void forward(double *inputs, double *outputs);
@@ -61,39 +64,11 @@ class FFNet {
 };
 
 
-
 /* Realization */
-// void FFLayer::backward(double *dE, double *dinputs, double lRate) {
-//   sigmoid_deriv_V(this->outputs, this->M, dE);
-//   MAC_MATRIX_aVV(lRate, dE, this->inputs, this->M, this->N, this->weights);
-//   MAC_aV(lRate, dE, this->M, this->bias);
-//   if(dinputs != nullptr) {
-//     MAC_MV(this->weights, dE, nullptr, this->M, this->N, dinputs, true);
-//   }
-// }
-// void FFLayer::writeToFile(FILE *f) {
-//   fwrite(this->weights, sizeof(double), this->N*this->M, f);
-//   fwrite(this->bias, sizeof(double), this->M, f);
-// }
-// void FFLayer::readFromFile(FILE *f) {
-//   fread(this->weights, sizeof(double), this->N*this->M, f);
-//   fread(this->bias, sizeof(double), this->M, f);
-// }
-
-void print_matrix(double *a, int n, int m) {
-  double *a1 = a;
-  for(int i=0; i<n; i++) {
-    for(int j=0; j<m; j++)
-      printf("%4.3lf ", a1[j]);
-    a1 += m;
-    printf("\n");
-  }
-  printf("\n");
-}
-
 FFNet::FFNet(int L, int *lSizes) {
   this->L = L;
-  this->lSizes = lSizes;
+  this->lSizes = new int[L];
+  memcpy(this->lSizes, lSizes, sizeof(int)*L);
   this->N = lSizes[0];
   this->M = lSizes[L-1];
 
@@ -119,8 +94,7 @@ FFNet::FFNet(int L, int *lSizes) {
   printf("gradientsSize: %d\n", this->gradientsSize);
 
   // randomizing params
-  // srand((unsigned) time(NULL));
-  srand(1221371927);
+  srand((unsigned) time(NULL));
   for(int i=0; i<this->weightsSize; i++)
     this->weights[i] = ((rand() % 200) - 100)/100.;
   for(int i=0; i<this->biasSize   ; i++)
@@ -187,22 +161,57 @@ void FFNet::applyGradients() {
 }
 
 void FFNet::save(char *filename) {
-  // FILE *f = fopen(filename, "wb");
-  // fwrite(&this->L, sizeof(int), 1, f);
-  // fwrite(this->lSizes, sizeof(int), L, f);
-  // for(int i=0; i<L-1; i++)
-  //   this->layers[i]->writeToFile(f);
-  // fclose(f);
+  FILE *f = fopen(filename, "wb");
+  fwrite(&this->L, sizeof(int), 1, f);
+  fwrite(this->lSizes, sizeof(int), L, f);
+  fwrite(this->weights, sizeof(double), this->weightsSize, f);
+  fwrite(this->bias, sizeof(double), this->biasSize, f);
+  fclose(f);
 }
-FFNet* FFNet::load(char *filename) {
-  // FILE *f = fopen(filename, "rb");
-  // int L, *lSizes;
-  // fread(&L, sizeof(int), 1, f);
-  // lSizes = new int[L];
-  // fread(lSizes, sizeof(int), L, f);
-  // FFNet *out = new FFNet(L, lSizes);
-  // for(int i=0; i<L-1; i++)
-  //   out->layers[i]->readFromFile(f);
-  // fclose(f);
-  // return out;
+FFNet::FFNet(char *filename) {
+  FILE *f = fopen(filename, "rb");
+  fread(&this->L, sizeof(int), 1, f);
+  this->lSizes = new int[this->L];
+  fread(this->lSizes, sizeof(int), L, f);
+  this->N = lSizes[0];
+  this->M = lSizes[L-1];
+
+  // calculating sizes of weights, biases and gradients
+  this->weightsSize = 0;
+  this->biasSize = 0;
+  this->gradientsSize;
+  for(int i=0; i<L-1; i++) {
+    this->weightsSize += this->lSizes[i]*this->lSizes[i+1];
+    this->biasSize += this->lSizes[i+1];
+  }
+  this->gradientsSize = weightsSize + biasSize + this->lSizes[0];
+  this->weights = new double[this->weightsSize];
+  this->bias = new double[this->biasSize];
+  this->valuesSize = this->lSizes[0] + this->biasSize;
+  this->values = new double[this->valuesSize];
+  this->gradients = new double[this->gradientsSize];
+  this->prevGragients = nullptr;
+
+  printf("weightsSize:   %d\n", this->weightsSize);
+  printf("biasSize:      %d\n", this->biasSize);
+  printf("valuesSize:    %d\n", this->valuesSize);
+  printf("gradientsSize: %d\n", this->gradientsSize);
+
+  fread(this->weights, sizeof(double), this->weightsSize, f);
+  fread(this->bias, sizeof(double), this->weightsSize, f);
+
+  // gradients = 0
+  memset(this->gradients, 0, this->gradientsSize*sizeof(double));
+  // memset(this->prevGragients, 0, this->gradientsSize*sizeof(double));
+
+  fclose(f);
+}
+
+FFNet::~FFNet() {
+  delete [] this->weights;
+  delete [] this->bias;
+  delete [] this->values;
+  delete [] this->gradients;
+  // delete [] this->prevGragients;
+  delete [] this->lSizes;
 }

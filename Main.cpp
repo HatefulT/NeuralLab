@@ -22,7 +22,7 @@ int main() {
   FFNet *net1 = new FFNet(1+1+1, lSizes);
   net1->setLearningParams(1., 0.001, 1000000);
 
-  for(int j=0; j<10000000; j++) {
+  for(int j=0; j<10000; j++) {
     int i = 2*(rand() % 4);
     net1->forward(test_X+i, output);
     dE[0] = test_Y[i] - output[0];
@@ -30,10 +30,24 @@ int main() {
     E += dE[0]*dE[0] + dE[1]*dE[1];
     net1->backward(dE, nullptr, j);
     net1->applyGradients();
-    if(j % 100000 == 0 and j != 0) {
+    if(j % 100 == 0 and j != 0) {
       printf("%d: %.10lf\n", j, E / 100000.);
       E = 0;
     }
+    if(j % 1000 == 0 and j != 0) {
+      net1->save("tmp.model");
+      printf("saved\n");
+      delete net1;
+      printf("freed\n");
+      net1 = new FFNet("tmp.model");
+      printf("loaded\n");
+    }
+  }
+
+  printf("Done training\n");
+  for(int i=0; i<8; i+=2) {
+    net1->forward(test_X+i, output);
+    printf("%2.1lf %2.1lf: %2.1lf %2.1lf\n", test_X[i], test_X[i+1], output[0], output[1]);
   }
 
 }
