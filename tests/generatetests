@@ -1,0 +1,4 @@
+rm sin.test
+rm sin.train
+python3 generateSin.py > sin.train
+python3 generateSin.py > sin.test
